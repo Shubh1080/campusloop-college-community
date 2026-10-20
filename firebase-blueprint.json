@@ -1,0 +1,156 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile document storing student details and role",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "email": { "type": "string", "maxLength": 120 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "branch": { "type": "string", "maxLength": 60 },
+        "academicYear": { "type": "string", "maxLength": 30 },
+        "role": { "type": "string", "enum": ["student", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "email", "role"]
+    },
+    "AdminDoc": {
+      "title": "AdminDoc",
+      "description": "Administrator registry reference",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "maxLength": 120 },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Community question or discussion post",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "authorBranch": { "type": "string", "maxLength": 60 },
+        "title": { "type": "string", "minLength": 3, "maxLength": 150 },
+        "content": { "type": "string", "minLength": 5, "maxLength": 3000 },
+        "type": { "type": "string", "enum": ["question", "discussion"] },
+        "category": { "type": "string", "enum": ["Academics", "Programming", "Projects", "General"] },
+        "upvotesCount": { "type": "integer" },
+        "commentsCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "authorName", "title", "content", "type", "category"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "Comment or answer on a community post",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "authorId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "authorPhotoURL": { "type": "string", "maxLength": 500 },
+        "content": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["postId", "authorId", "authorName", "content"]
+    },
+    "Vote": {
+      "title": "Vote",
+      "description": "Upvote on a post by a user",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["postId", "userId"]
+    },
+    "Notice": {
+      "title": "Notice",
+      "description": "Official college announcement from campus administrators",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 3, "maxLength": 150 },
+        "summary": { "type": "string", "minLength": 5, "maxLength": 250 },
+        "content": { "type": "string", "minLength": 10, "maxLength": 3000 },
+        "publisherId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "publisherName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "status": { "type": "string", "enum": ["active", "archived"] },
+        "publishedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "summary", "content", "publisherId", "publisherName", "status"]
+    },
+    "Event": {
+      "title": "Event",
+      "description": "College event published by administrators",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 3, "maxLength": 150 },
+        "description": { "type": "string", "minLength": 5, "maxLength": 3000 },
+        "category": { "type": "string", "enum": ["Hackathon", "Workshop", "Competition", "Cultural Event", "Other"] },
+        "organizer": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "startAt": { "type": "string", "minLength": 3, "maxLength": 100 },
+        "venue": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "status": { "type": "string", "enum": ["upcoming", "ongoing", "completed", "cancelled"] },
+        "registrationCount": { "type": "integer" },
+        "createdBy": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "category", "organizer", "startAt", "venue", "status", "createdBy"]
+    },
+    "EventRegistration": {
+      "title": "EventRegistration",
+      "description": "Student RSVP registration for a college event",
+      "type": "object",
+      "properties": {
+        "eventId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "userEmail": { "type": "string", "maxLength": 120 },
+        "status": { "type": "string", "enum": ["registered", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["eventId", "userId", "userName", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile documents keyed by Firebase auth UID"
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminDoc" },
+      "description": "Registry of authorized college administrators"
+    },
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Campus community questions and discussions"
+    },
+    "/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/Comment" },
+      "description": "Comments and replies on community posts"
+    },
+    "/votes/{voteId}": {
+      "schema": { "$ref": "#/entities/Vote" },
+      "description": "Post upvotes indexed by postId_userId"
+    },
+    "/notices/{noticeId}": {
+      "schema": { "$ref": "#/entities/Notice" },
+      "description": "Official college announcements"
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/Event" },
+      "description": "Campus events scheduled by administrators"
+    },
+    "/eventRegistrations/{regId}": {
+      "schema": { "$ref": "#/entities/EventRegistration" },
+      "description": "Event RSVPs indexed by eventId_userId"
+    }
+  }
+}

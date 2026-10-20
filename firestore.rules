@@ -1,0 +1,185 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Admin authorization: checks bootstrap email or presence in admins collection
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'shubhamaggrawal15@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // -------------------------------------------------------------
+    // Connection Test Document
+    // -------------------------------------------------------------
+    match /test/{testId} {
+      allow read: if true;
+    }
+
+    // -------------------------------------------------------------
+    // Users Collection
+    // -------------------------------------------------------------
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId);
+      allow list: if isSignedIn();
+
+      // Only self can create, defaulting role to student unless admin
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+        && incoming().uid == userId
+        && incoming().displayName is string && incoming().displayName.size() >= 1 && incoming().displayName.size() <= 80
+        && (incoming().role == 'student' || (incoming().role == 'admin' && isAdmin()));
+
+      // Self can update their own profile details, but NOT their role
+      allow update: if isSignedIn() && isValidId(userId) && (
+        (request.auth.uid == userId && incoming().uid == userId && incoming().role == existing().role) ||
+        isAdmin()
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------
+    // Admins Collection
+    // -------------------------------------------------------------
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId);
+      allow list: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // -------------------------------------------------------------
+    // Notices Collection (Official announcements)
+    // -------------------------------------------------------------
+    match /notices/{noticeId} {
+      allow get: if isValidId(noticeId);
+      allow list: if true;
+      allow create: if isAdmin() && isValidId(noticeId)
+        && incoming().title is string && incoming().title.size() >= 3 && incoming().title.size() <= 150
+        && incoming().summary is string && incoming().summary.size() >= 5 && incoming().summary.size() <= 250
+        && incoming().content is string && incoming().content.size() >= 10 && incoming().content.size() <= 5000;
+      allow update, delete: if isAdmin() && isValidId(noticeId);
+    }
+
+    // -------------------------------------------------------------
+    // Events Collection
+    // -------------------------------------------------------------
+    match /events/{eventId} {
+      allow get: if isValidId(eventId);
+      allow list: if true;
+      allow create: if isAdmin() && isValidId(eventId)
+        && incoming().title is string && incoming().title.size() >= 3 && incoming().title.size() <= 150
+        && incoming().description is string && incoming().description.size() >= 5 && incoming().description.size() <= 5000
+        && incoming().category in ['Hackathon', 'Workshop', 'Competition', 'Cultural Event', 'Other'];
+      allow update: if (isAdmin() && isValidId(eventId)) || (
+        // Allow incrementing/decrementing registrationCount on RSVP
+        isSignedIn() && isValidId(eventId) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['registrationCount'])
+      );
+      allow delete: if isAdmin() && isValidId(eventId);
+    }
+
+    // -------------------------------------------------------------
+    // Event Registrations Collection (Unique per eventId_userId)
+    // -------------------------------------------------------------
+    match /eventRegistrations/{regId} {
+      allow get: if isSignedIn() && isValidId(regId) && (
+        resource == null || resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(regId)
+        && incoming().userId == request.auth.uid
+        && incoming().eventId is string && isValidId(incoming().eventId)
+        && regId == incoming().eventId + '_' + request.auth.uid;
+      allow update: if isSignedIn() && isValidId(regId)
+        && (existing().userId == request.auth.uid || isAdmin())
+        && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(regId)
+        && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // -------------------------------------------------------------
+    // Posts Collection
+    // -------------------------------------------------------------
+    match /posts/{postId} {
+      allow get: if isValidId(postId);
+      allow list: if true;
+      allow create: if isSignedIn() && isValidId(postId)
+        && incoming().authorId == request.auth.uid
+        && incoming().title is string && incoming().title.size() >= 3 && incoming().title.size() <= 150
+        && incoming().content is string && incoming().content.size() >= 5 && incoming().content.size() <= 5000
+        && incoming().type in ['question', 'discussion']
+        && incoming().category in ['Academics', 'Programming', 'Projects', 'General'];
+
+      allow update: if isValidId(postId) && isSignedIn() && (
+        // Author can update content, title, category, updatedAt
+        (existing().authorId == request.auth.uid && incoming().authorId == existing().authorId) ||
+        // Upvote or comment count updates
+        (incoming().diff(existing()).affectedKeys().hasOnly(['upvotesCount']) ||
+         incoming().diff(existing()).affectedKeys().hasOnly(['commentsCount']) ||
+         incoming().diff(existing()).affectedKeys().hasOnly(['upvotesCount', 'commentsCount'])) ||
+        // Admin
+        isAdmin()
+      );
+
+      // Author or admin can delete post
+      allow delete: if isValidId(postId) && isSignedIn() && (
+        existing().authorId == request.auth.uid || isAdmin()
+      );
+    }
+
+    // -------------------------------------------------------------
+    // Comments Collection
+    // -------------------------------------------------------------
+    match /comments/{commentId} {
+      allow get: if isValidId(commentId);
+      allow list: if true;
+      allow create: if isSignedIn() && isValidId(commentId)
+        && incoming().authorId == request.auth.uid
+        && incoming().postId is string && isValidId(incoming().postId)
+        && incoming().content is string && incoming().content.size() >= 1 && incoming().content.size() <= 2000;
+      allow update: if isSignedIn() && isValidId(commentId)
+        && existing().authorId == request.auth.uid
+        && incoming().authorId == existing().authorId;
+      allow delete: if isSignedIn() && isValidId(commentId)
+        && (existing().authorId == request.auth.uid || isAdmin());
+    }
+
+    // -------------------------------------------------------------
+    // Votes Collection (Unique per postId_userId)
+    // -------------------------------------------------------------
+    match /votes/{voteId} {
+      allow get: if isSignedIn() && isValidId(voteId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(voteId)
+        && incoming().userId == request.auth.uid
+        && incoming().postId is string && isValidId(incoming().postId)
+        && voteId == incoming().postId + '_' + request.auth.uid;
+      allow delete: if isSignedIn() && isValidId(voteId)
+        && existing().userId == request.auth.uid;
+    }
+
+    // Catch-all default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

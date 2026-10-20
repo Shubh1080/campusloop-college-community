@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --color-campus-bg: #F8F7FC;
+  --color-campus-primary: #7565F7;
+  --color-campus-primary-hover: #6352E8;
+  --color-campus-text: #191827;
+  --color-campus-card: #FFFFFF;
+  --color-campus-border: #E9E7F1;
+  --color-campus-accent: #D5F36B;
+  --color-campus-muted: #77778A;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #F8F7FC;
+  color: #191827;
+}
+
+/* Custom scrollbar for modern feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #E9E7F1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
+}

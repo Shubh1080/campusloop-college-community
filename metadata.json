@@ -1,0 +1,6 @@
+{
+  "name": "CampusLoop",
+  "description": "Your campus. Your community. A modern college community platform for campus notices, student discussions, and events.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
